@@ -1,25 +1,29 @@
 version: '2'
 services:
   nginx:
-    container_name: demo_nginx
+    image: nginx:alpine
+    container_name: ${APP_NAME}_nginx
     volumes:
-      - ./app:${CONTAINER_WEB_ROOT}
-    build:
-      context: ./nginx
-      args:
-        - PHP_FPM_FASTCGI=${PHP_FPM_HOST}:${PHP_FPM_PORT}
-        - CONTAINER_WEB_ROOT=${CONTAINER_WEB_ROOT}
-        - NGINX_SERVER_NAME=${NGINX_SERVER_NAME}
+      - "./etc/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+      - "./etc/ssl:/etc/ssl"
+      - "./app:/var/www/html"
+      - "./etc/nginx/default.template.conf:/etc/nginx/conf.d/default.template"
     ports:
-      - ${NGINX_PORT}:80
-      - ${NGINX_SSL_PORT}:443
+      - "${NGINX_PORT}:80"
+    environment:
+      - NGINX_HOST=${NGINX_HOST}
+      - CONTAINER_WEB_ROOT=$CONTAINER_WEB_ROOT
+      - PHP_FPM_HANDLER=php:${PHP_FPM_PORT}
+    command: /bin/sh -c "envsubst '$$NGINX_HOST,$$CONTAINER_WEB_ROOT,$$PHP_FPM_HANDLER'< /etc/nginx/conf.d/default.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
     depends_on:
-      - php-fpm
+      - php
       - mysqld
-  php-fpm:
-    container_name: demo_php
+    links:
+      - php
+  php:
+    container_name: ${APP_NAME}_php
     volumes:
-      - ./app:${CONTAINER_WEB_ROOT}
+      - "./app:${CONTAINER_WEB_ROOT}"
     build:
       context: ./php-fpm
       args:
@@ -39,7 +43,7 @@ services:
       context: ./mysql
       args:
         - MYSQL_VERSION=${MYSQL_VERSION}
-    container_name: demo_mysqld
+    container_name: ${APP_NAME}_mysqld
     command: --default-authentication-plugin=mysql_native_password
     env_file:
         - ".env"
@@ -52,7 +56,7 @@ services:
       - 3306:3306
   myadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: demo_phpmyadmin
+    container_name: ${APP_NAME}_phpmyadmin
     ports:
       - ${PHPMYADMIN_PORT}:80
     environment:

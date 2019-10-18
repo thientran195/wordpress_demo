@@ -34,7 +34,8 @@ ENV COMPOSER_VERSION=1.8.0
 RUN wget "https://getcomposer.org/download/${COMPOSER_VERSION}/composer.phar" -O /tmp/composer.phar
 RUN chmod a+x /tmp/composer.phar
 RUN cp /tmp/composer.phar /usr/local/bin/composer.phar
-CMD ["echo \"alias composer='/usr/local/bin/composer.phar'\" >> ~/.bashrc"]
-CMD ["source ~/.bashrc"]
-CMD ["cat ~/.bashrc"]
-EXPOSE ${PHP_FPM_PORT}
+RUN echo "alias composer='/usr/local/bin/composer.phar'" >> ~/.bashrc
+
+RUN  echo -e "${LIGHT_GREEN} Install wordpress.${NC}"
+
+EXPOSE 9000
